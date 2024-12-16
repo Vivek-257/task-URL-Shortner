@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>URL Shortener</title>
+</head>
+<body>
+  <h1>URL Shortener</h1>
+
+  <% if (userId) { %>
+    <p><strong>User ID:</strong> <%= userId %></p>
+  <% } %>
+
+  <form action="/api/shorten" method="POST">
+    <label for="longUrl">Long URL:</label>
+    <input type="text" id="longUrl" name="longUrl" required>
+    
+    <label for="alias">Custom Alias (optional):</label>
+    <input type="text" id="alias" name="alias">
+    
+    <label for="topic">Topic (optional):</label>
+    <input type="text" id="topic" name="topic">
+
+    <button type="submit">Shorten URL</button>
+  </form>
+
+  <% if (shortUrl) { %>
+    <h2>Your Shortened URL:</h2>
+    <p><a href="<%= shortUrl %>" target="_blank"><%= shortUrl %></a></p>
+
+    <!-- Link to view the analytics -->
+    <h3>Analytics:</h3>
+    <p><a href="<%= analyticsUrl %>" target="_blank">View Analytics</a></p>
+  <% } %>
+
+</body>
+</html>

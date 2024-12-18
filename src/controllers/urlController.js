@@ -30,12 +30,22 @@ exports.shortenUrl = async (req, res) => {
         });
       }
   
+      // await db.collection('shortUrls').insertOne({
+      //   longUrl,
+      //   alias: shortAlias,
+      //   topic: topic || 'general',
+      //   createdAt: new Date(),
+      // });
+
       await db.collection('shortUrls').insertOne({
         longUrl,
         alias: shortAlias,
         topic: topic || 'general',
         createdAt: new Date(),
-      });
+        totalClicks: 0,
+        uniqueUsers: [],
+        clickData: [], // Array to store detailed click data
+    });
   
       const shortUrl = `http://localhost:3000/api/${shortAlias}`;
       const analyticsUrl = `http://localhost:3000/api/analytics/${shortAlias}`;
@@ -60,36 +70,68 @@ exports.shortenUrl = async (req, res) => {
   exports.redirectUrl = async (req, res) => {
     const db = getDatabase();
     const { alias } = req.params;
-  
+
     try {
-      const cachedLongUrl = await redisClient.get(`shortUrl:${alias}`);
-      
-      if (cachedLongUrl) {
-        console.log(`[CACHE HIT] Alias: ${alias}, Long URL: ${cachedLongUrl}`);
-        return res.redirect(cachedLongUrl); 
-      }
-  
-      console.log(`[CACHE MISS] Alias: ${alias}, Fetching from MongoDB`);
-  
-      const urlData = await db.collection('shortUrls').findOne({ alias });
-  
-      if (!urlData) {
-        console.log(`[DB MISS] Alias: ${alias} not found in MongoDB`);
-        return res.status(404).send('URL not found');
-      }
-  
-      const longUrl = urlData.longUrl;
-  
-      await redisClient.setEx(`shortUrl:${alias}`, 3600, longUrl);
-      console.log(`[DB HIT] Alias: ${alias}, Long URL: ${longUrl}, Cached in Redis`);
-  
-      res.redirect(longUrl); 
+        const cachedLongUrl = await redisClient.get(`shortUrl:${alias}`);
+
+        if (cachedLongUrl) {
+            console.log(`[CACHE HIT] Alias: ${alias}, Long URL: ${cachedLongUrl}`);
+            await logClickAnalytics(alias, req); 
+            return res.redirect(cachedLongUrl);
+        }
+
+        console.log(`[CACHE MISS] Alias: ${alias}, Fetching from MongoDB`);
+        const urlData = await db.collection('shortUrls').findOne({ alias });
+
+        if (!urlData) {
+            console.log(`[DB MISS] Alias: ${alias} not found in MongoDB`);
+            return res.status(404).send('URL not found');
+        }
+
+        const longUrl = urlData.longUrl;
+
+        await redisClient.setEx(`shortUrl:${alias}`, 3600, longUrl);
+        console.log(`[DB HIT] Alias: ${alias}, Long URL: ${longUrl}, Cached in Redis`);
+
+        await logClickAnalytics(alias, req);
+
+        res.redirect(longUrl);
     } catch (error) {
-      console.error('Error in redirectUrl:', error);
-      res.status(500).send('Internal server error');
+        console.error('Error in redirectUrl:', error);
+        res.status(500).send('Internal server error');
     }
-  };
-  
+};
+
+const logClickAnalytics = async (alias, req) => {
+    const db = getDatabase();
+
+    try {
+        const userAgent = useragent.parse(req.headers['user-agent']);
+        const osType = userAgent.os.toString();
+        const deviceType = userAgent.device.toString();
+        const userId = req.user?.id || 'anonymous';
+        const clickData = {
+            user: userId,
+            osType,
+            deviceType,
+            date: new Date().toISOString().split('T')[0], // Store date only
+        };
+
+        await db.collection('shortUrls').updateOne(
+            { alias },
+            {
+                $inc: { totalClicks: 1 },
+                $addToSet: { uniqueUsers: userId },
+                $push: { clickData },
+            }
+        );
+
+        console.log(`[ANALYTICS LOGGED] Alias: ${alias}, ClickData:`, clickData);
+    } catch (error) {
+        console.error('Error logging analytics:', error);
+    }
+};
+
   
 
 exports.getAnalytics = async (req, res) => {

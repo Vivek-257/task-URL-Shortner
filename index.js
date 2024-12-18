@@ -16,15 +16,12 @@ const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
 const SESSION_SECRET = process.env.SESSION_SECRET || 'your-default-secret';
 const PORT = process.env.PORT || 3000;
 
-// Middleware
 app.use(express.json());
-app.use(express.urlencoded({ extended: true })); // For handling form data
+app.use(express.urlencoded({ extended: true })); 
 
-// Set up views and static files
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'src', 'views'));
 
-// Session and Passport setup
 app.use(session({
   secret: SESSION_SECRET,
   resave: false,
@@ -34,10 +31,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Routes
-app.use('/api', urlRoutes); // Routes for API endpoints
+app.use('/api', urlRoutes); 
 
-// Passport Google OAuth2 Strategy
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
@@ -52,14 +47,7 @@ passport.use(new GoogleStrategy({
 passport.serializeUser((user, done) => done(null, user));
 passport.deserializeUser((user, done) => done(null, user));
 
-// Home route
-// app.get('/', (req, res) => {
-//   if (req.isAuthenticated()) {
-//     res.render('index', { shortUrl: null, error: null, user: req.user });
-//   } else {
-//     res.render('login');
-//   }
-// });
+
 
 app.get('/', (req, res) => {
     if (req.isAuthenticated()) {
@@ -75,7 +63,6 @@ app.get('/', (req, res) => {
 
   
 
-// Google OAuth login
 app.get('/auth/google',
   passport.authenticate('google', { scope: ['profile', 'email'] })
 );
@@ -85,7 +72,6 @@ app.get('/auth/google/callback',
   (req, res) => res.redirect('/')
 );
 
-// Logout route
 app.get('/logout', (req, res) => {
   req.logout(err => {
     if (err) {
@@ -93,13 +79,12 @@ app.get('/logout', (req, res) => {
       return res.redirect('/');
     }
     req.session.destroy(() => {
-      res.clearCookie('connect.sid'); // Clear session cookie
-      res.redirect('/'); // Redirect to login page
+      res.clearCookie('connect.sid'); 
+      res.redirect('/'); 
     });
   });
 });
 
-// Database connection and server start
 connectToDatabase().then(() => {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);

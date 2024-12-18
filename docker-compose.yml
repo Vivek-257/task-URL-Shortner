@@ -1,0 +1,17 @@
+version: '3'
+services:
+  my-app:
+    build: .
+    container_name: my-node-app
+    ports:
+      - "3000:3000"   # Expose the port your app is running on
+    environment:
+      - REDIS_HOST=redis  # Name of the Redis container
+    depends_on:
+      - redis
+
+  redis:
+    image: redis:latest   # Official Redis image from Docker Hub
+    container_name: redis
+    ports:
+      - "6379:6379"   # Expose Redis' default port

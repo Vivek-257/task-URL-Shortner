@@ -46,10 +46,15 @@ exports.shortenUrl = async (req, res) => {
 
       const shortUrl = `${BASE_URL}/api/${shortAlias}`;
       const analyticsUrl = `${BASE_URL}/api/analytics/${shortAlias}`;
+
+      const displayShortUrl = `shortURL/${shortAlias}`;
+    const displayAnalyticsUrl = `shortURL/analytics/${shortAlias}`;
   
       res.render('index', { 
         shortUrl, 
-        analyticsUrl,   
+        analyticsUrl, 
+        displayShortUrl,
+        displayAnalyticsUrl,
         error: null, 
         userId: req.user?.id 
       });

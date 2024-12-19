@@ -4,6 +4,7 @@ const crypto = require('crypto');
 const redisClient=require('../utils/redis.js')
 const useragent = require('useragent');
 const generateAlias = () => crypto.randomBytes(4).toString('hex');
+const BASE_URL = 'https://task-url-shortner-git-master-vivek-sharmas-projects-bb4e4fe9.vercel.app';
 
 
 exports.shortenUrl = async (req, res) => {
@@ -40,8 +41,11 @@ exports.shortenUrl = async (req, res) => {
         clickData: [], //store click date in this 
     });
   
-      const shortUrl = `http://localhost:3000/api/${shortAlias}`;
-      const analyticsUrl = `http://localhost:3000/api/analytics/${shortAlias}`;
+      // const shortUrl = `http://localhost:3000/api/${shortAlias}`;
+      // const analyticsUrl = `http://localhost:3000/api/analytics/${shortAlias}`;
+
+      const shortUrl = `${BASE_URL}/api/${shortAlias}`;
+      const analyticsUrl = `${BASE_URL}/api/analytics/${shortAlias}`;
   
       res.render('index', { 
         shortUrl, 
@@ -288,7 +292,7 @@ function aggregateByOS(clickData) {
         }
   
         urlsData.push({
-          shortUrl: `http://localhost:3000/api/${url.alias}`,
+          shortUrl: `${BASE_URL}/api/${url.alias}`,
           totalClicks: url.totalClicks || 0,
           uniqueClicks: (url.uniqueUsers || []).length,
         });

@@ -29,13 +29,6 @@ exports.shortenUrl = async (req, res) => {
           userId: req.user?.id 
         });
       }
-  
-      // await db.collection('shortUrls').insertOne({
-      //   longUrl,
-      //   alias: shortAlias,
-      //   topic: topic || 'general',
-      //   createdAt: new Date(),
-      // });
 
       await db.collection('shortUrls').insertOne({
         longUrl,
@@ -44,7 +37,7 @@ exports.shortenUrl = async (req, res) => {
         createdAt: new Date(),
         totalClicks: 0,
         uniqueUsers: [],
-        clickData: [], // Array to store detailed click data
+        clickData: [], //to store my click data
     });
   
       const shortUrl = `http://localhost:3000/api/${shortAlias}`;
@@ -67,69 +60,84 @@ exports.shortenUrl = async (req, res) => {
   };
   
 
-  exports.redirectUrl = async (req, res) => {
-    const db = getDatabase();
-    const { alias } = req.params;
 
-    try {
-        const cachedLongUrl = await redisClient.get(`shortUrl:${alias}`);
+exports.redirectUrl = async (req, res) => {
+  const db = getDatabase();
+  const { alias } = req.params;
 
-        if (cachedLongUrl) {
-            console.log(`[CACHE HIT] Alias: ${alias}, Long URL: ${cachedLongUrl}`);
-            await logClickAnalytics(alias, req); 
-            return res.redirect(cachedLongUrl);
-        }
+  try {
+      const userId = req.user?.id || req.ip; 
+      const rateLimitKey = `rateLimit:redirect:${userId}:${alias}`;
+      const MAX_REQUESTS = 3; 
+      const WINDOW_IN_SECONDS = 60; 
 
-        console.log(`[CACHE MISS] Alias: ${alias}, Fetching from MongoDB`);
-        const urlData = await db.collection('shortUrls').findOne({ alias });
+      const currentRequests = await redisClient.incr(rateLimitKey);
 
-        if (!urlData) {
-            console.log(`[DB MISS] Alias: ${alias} not found in MongoDB`);
-            return res.status(404).send('URL not found');
-        }
+      if (currentRequests === 1) {
+          await redisClient.expire(rateLimitKey, WINDOW_IN_SECONDS);
+      } else if (currentRequests > MAX_REQUESTS) {
+          console.log(`[RATE LIMIT] User: ${userId}, Alias: ${alias}, Requests: ${currentRequests}`);
+          return res.status(429).json({
+              error: `Rate limit exceeded. You can access this URL up to ${MAX_REQUESTS} times per minute.`,
+          });
+      }
 
-        const longUrl = urlData.longUrl;
+      const cachedLongUrl = await redisClient.get(`shortUrl:${alias}`);
+      if (cachedLongUrl) {
+          console.log(`[CACHE HIT] Alias: ${alias}, Long URL: ${cachedLongUrl}`);
+          await logClickAnalytics(alias, req); 
+          return res.redirect(cachedLongUrl);
+      }
 
-        await redisClient.setEx(`shortUrl:${alias}`, 3600, longUrl);
-        console.log(`[DB HIT] Alias: ${alias}, Long URL: ${longUrl}, Cached in Redis`);
+      console.log(`[CACHE MISS] Alias: ${alias}, Fetching from MongoDB`);
+      const urlData = await db.collection('shortUrls').findOne({ alias });
 
-        await logClickAnalytics(alias, req);
+      if (!urlData) {
+          console.log(`[DB MISS] Alias: ${alias} not found in MongoDB`);
+          return res.status(404).send('URL not found');
+      }
 
-        res.redirect(longUrl);
-    } catch (error) {
-        console.error('Error in redirectUrl:', error);
-        res.status(500).send('Internal server error');
-    }
+      const longUrl = urlData.longUrl;
+
+      await redisClient.setex(`shortUrl:${alias}`, 3600, longUrl);
+      console.log(`[DB HIT] Alias: ${alias}, Long URL: ${longUrl}, Cached in Redis`);
+
+      await logClickAnalytics(alias, req);
+      res.redirect(longUrl);
+  } catch (error) {
+      console.error('Error in redirectUrl:', error);
+      res.status(500).send('Internal server error');
+  }
 };
 
 const logClickAnalytics = async (alias, req) => {
-    const db = getDatabase();
+  const db = getDatabase();
 
-    try {
-        const userAgent = useragent.parse(req.headers['user-agent']);
-        const osType = userAgent.os.toString();
-        const deviceType = userAgent.device.toString();
-        const userId = req.user?.id || 'anonymous';
-        const clickData = {
-            user: userId,
-            osType,
-            deviceType,
-            date: new Date().toISOString().split('T')[0], // Store date only
-        };
+  try {
+      const userAgent = useragent.parse(req.headers['user-agent']);
+      const osType = userAgent.os.toString();
+      const deviceType = userAgent.device.toString();
+      const userId = req.user?.id || 'anonymous';
+      const clickData = {
+          user: userId,
+          osType,
+          deviceType,
+          date: new Date().toISOString().split('T')[0],
+      };
 
-        await db.collection('shortUrls').updateOne(
-            { alias },
-            {
-                $inc: { totalClicks: 1 },
-                $addToSet: { uniqueUsers: userId },
-                $push: { clickData },
-            }
-        );
+      await db.collection('shortUrls').updateOne(
+          { alias },
+          {
+              $inc: { totalClicks: 1 },
+              $addToSet: { uniqueUsers: userId },
+              $push: { clickData },
+          }
+      );
 
-        console.log(`[ANALYTICS LOGGED] Alias: ${alias}, ClickData:`, clickData);
-    } catch (error) {
-        console.error('Error logging analytics:', error);
-    }
+      console.log(`[ANALYTICS LOGGED] Alias: ${alias}, ClickData:`, clickData);
+  } catch (error) {
+      console.error('Error logging analytics:', error);
+  }
 };
 
   

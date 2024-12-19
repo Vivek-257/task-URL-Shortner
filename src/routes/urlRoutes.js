@@ -9,6 +9,6 @@ router.get('/:alias',isAuth, redirectUrl);
 
 router.get('/analytics/:alias', getAnalytics);
 
-router.get('/api/analytics/topic/:topic', getTopicAnalytics);
+router.get('/analytics/topic/:topic', getTopicAnalytics);
 
 module.exports = router;

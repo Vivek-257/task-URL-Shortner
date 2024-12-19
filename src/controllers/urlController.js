@@ -5,6 +5,26 @@ const redisClient=require('../utils/redis.js')
 const useragent = require('useragent');
 const generateAlias = () => crypto.randomBytes(4).toString('hex');
 
+const BASE_URL = 'https://task-url-shortner-git-master-vivek-sharmas-projects-bb4e4fe9.vercel.app';
+
+app.post('/api/shorten', async (req, res) => {
+  const { originalUrl } = req.body;
+
+  try {
+    const shortUrl = await createShortUrl(originalUrl); // Your URL shortener logic
+    res.json({ shortUrl: `${BASE_URL}/api/${shortUrl.id}` });
+  } catch (error) {
+    res.status(500).json({ error: 'Error creating short URL' });
+  }
+});
+
+app.get('/', (req, res) => {
+  if (req.isAuthenticated()) {
+    res.render('index', { shortUrl: null, error: null, BASE_URL });
+  } else {
+    res.render('login');
+  }
+});
 
 exports.shortenUrl = async (req, res) => {
     const db = getDatabase();
@@ -40,8 +60,11 @@ exports.shortenUrl = async (req, res) => {
         clickData: [], //to store my click data
     });
   
-      const shortUrl = `http://localhost:3000/api/${shortAlias}`;
-      const analyticsUrl = `http://localhost:3000/api/analytics/${shortAlias}`;
+      // const shortUrl = `http://localhost:3000/api/${shortAlias}`;
+      // const analyticsUrl = `http://localhost:3000/api/analytics/${shortAlias}`;
+
+      const shortUrl = `${BASE_URL}/api/${shortAlias}`;
+      const analyticsUrl = `${BASE_URL}/api/analytics/${shortAlias}`;
   
       res.render('index', { 
         shortUrl, 
@@ -288,7 +311,7 @@ function aggregateByOS(clickData) {
         }
   
         urlsData.push({
-          shortUrl: `http://localhost:3000/api/${url.alias}`,
+          shortUrl: `${BASE_URL}/api/${url.alias}`,
           totalClicks: url.totalClicks || 0,
           uniqueClicks: (url.uniqueUsers || []).length,
         });

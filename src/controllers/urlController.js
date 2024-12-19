@@ -15,7 +15,8 @@ exports.shortenUrl = async (req, res) => {
       return res.render('index', { 
         shortUrl: null, 
         error: 'Long URL is required', 
-        userId: req.user?.id 
+        userId: req.user?.id ,
+        topic:topic
       });
     }
   
@@ -27,7 +28,8 @@ exports.shortenUrl = async (req, res) => {
         return res.render('index', { 
           shortUrl: null, 
           error: 'Alias already in use', 
-          userId: req.user?.id 
+          userId: req.user?.id ,
+          topic:topic
         });
       }
 
@@ -56,14 +58,16 @@ exports.shortenUrl = async (req, res) => {
         displayShortUrl,
         displayAnalyticsUrl,
         error: null, 
-        userId: req.user?.id 
+        userId: req.user?.id,
+        topic:topic
       });
     } catch (error) {
       console.error(error);
       res.render('index', { 
         shortUrl: null, 
         error: 'Internal server error', 
-        userId: req.user?.id 
+        userId: req.user?.id,
+        topic:topic
       });
     }
   };

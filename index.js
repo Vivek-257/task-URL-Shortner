@@ -33,10 +33,14 @@ app.use(passport.session());
 
 app.use('/api', urlRoutes); 
 
+
+const callbackURL = process.env.NODE_ENV === 'production'
+  ? 'https://task-url-shortner-git-master-vivek-sharmas-projects-bb4e4fe9.vercel.app/auth/google/callback'
+  : 'http://localhost:3000/auth/google/callback';
 passport.use(new GoogleStrategy({
   clientID: GOOGLE_CLIENT_ID,
   clientSecret: GOOGLE_CLIENT_SECRET,
-  callbackURL: '/auth/google/callback',
+  callbackURL: callbackURL,
 }, (accessToken, refreshToken, profile, done) => {
   console.log('Google profile:', profile);
   return done(null, profile);

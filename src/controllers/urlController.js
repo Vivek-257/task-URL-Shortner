@@ -325,7 +325,6 @@ function aggregateByOS(clickData) {
   //   }
   // };
   
-
   exports.getTopicAnalytics = async (req, res) => {
     const db = getDatabase();
     const { topic } = req.params;
@@ -371,15 +370,14 @@ function aggregateByOS(clickData) {
             clickCount: clicksByDate[date],
         }));
 
-        // Render the data in your EJS view
-        res.render('topicAnalytics', {
+        return res.json({
             topic,
             totalClicks,
             uniqueClicks: uniqueUsers.size,
             clicksByDate: formattedClicksByDate,
             urls: urlsData,
-            error: null,  // Or pass an error message if needed
         });
+
     } catch (error) {
         console.error(error);
         res.status(500).json({ error: 'Internal server error' });

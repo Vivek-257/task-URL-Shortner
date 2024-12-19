@@ -263,61 +263,121 @@ function aggregateByOS(clickData) {
   }
 
 
+  // exports.getTopicAnalytics = async (req, res) => {
+  //   const db = getDatabase();
+  //   const { topic } = req.params;
+  
+  //   try {
+  //     const urls = await db.collection('shortUrls').find({ topic }).toArray();
+  
+  //     if (!urls.length) {
+  //       return res.status(404).json({ error: 'No URLs found for this topic' });
+  //     }
+  
+  //     let totalClicks = 0;
+  //     const uniqueUsers = new Set();
+  //     const clicksByDate = {};
+  //     const urlsData = [];
+  
+  //     urls.forEach((url) => {
+  //       totalClicks += url.totalClicks || 0;
+  
+  //       if (Array.isArray(url.uniqueUsers)) {
+  //         url.uniqueUsers.forEach((user) => uniqueUsers.add(user));
+  //       }
+  
+  //       if (Array.isArray(url.clickData)) {
+  //         url.clickData.forEach((click) => {
+  //           const date = click.date;
+  //           if (!clicksByDate[date]) {
+  //             clicksByDate[date] = 0;
+  //           }
+  //           clicksByDate[date]++;
+  //         });
+  //       }
+  
+  //       urlsData.push({
+  //         shortUrl: `${BASE_URL}/api/${url.alias}`,
+  //         totalClicks: url.totalClicks || 0,
+  //         uniqueClicks: (url.uniqueUsers || []).length,
+  //       });
+  //     });
+  
+  //     const formattedClicksByDate = Object.keys(clicksByDate).map((date) => ({
+  //       date,
+  //       clickCount: clicksByDate[date],
+  //     }));
+  
+  //     res.json({
+  //       topic,
+  //       totalClicks,
+  //       uniqueClicks: uniqueUsers.size,
+  //       clicksByDate: formattedClicksByDate,
+  //       urls: urlsData,
+  //     });
+  //   } catch (error) {
+  //     console.error(error);
+  //     res.status(500).json({ error: 'Internal server error' });
+  //   }
+  // };
+  
+
   exports.getTopicAnalytics = async (req, res) => {
     const db = getDatabase();
     const { topic } = req.params;
-  
+
     try {
-      const urls = await db.collection('shortUrls').find({ topic }).toArray();
-  
-      if (!urls.length) {
-        return res.status(404).json({ error: 'No URLs found for this topic' });
-      }
-  
-      let totalClicks = 0;
-      const uniqueUsers = new Set();
-      const clicksByDate = {};
-      const urlsData = [];
-  
-      urls.forEach((url) => {
-        totalClicks += url.totalClicks || 0;
-  
-        if (Array.isArray(url.uniqueUsers)) {
-          url.uniqueUsers.forEach((user) => uniqueUsers.add(user));
+        const urls = await db.collection('shortUrls').find({ topic }).toArray();
+
+        if (!urls.length) {
+            return res.status(404).json({ error: 'No URLs found for this topic' });
         }
-  
-        if (Array.isArray(url.clickData)) {
-          url.clickData.forEach((click) => {
-            const date = click.date;
-            if (!clicksByDate[date]) {
-              clicksByDate[date] = 0;
+
+        let totalClicks = 0;
+        const uniqueUsers = new Set();
+        const clicksByDate = {};
+        const urlsData = [];
+
+        urls.forEach((url) => {
+            totalClicks += url.totalClicks || 0;
+
+            if (Array.isArray(url.uniqueUsers)) {
+                url.uniqueUsers.forEach((user) => uniqueUsers.add(user));
             }
-            clicksByDate[date]++;
-          });
-        }
-  
-        urlsData.push({
-          shortUrl: `${BASE_URL}/api/${url.alias}`,
-          totalClicks: url.totalClicks || 0,
-          uniqueClicks: (url.uniqueUsers || []).length,
+
+            if (Array.isArray(url.clickData)) {
+                url.clickData.forEach((click) => {
+                    const date = click.date;
+                    if (!clicksByDate[date]) {
+                        clicksByDate[date] = 0;
+                    }
+                    clicksByDate[date]++;
+                });
+            }
+
+            urlsData.push({
+                shortUrl: `${BASE_URL}/api/${url.alias}`,
+                totalClicks: url.totalClicks || 0,
+                uniqueClicks: (url.uniqueUsers || []).length,
+            });
         });
-      });
-  
-      const formattedClicksByDate = Object.keys(clicksByDate).map((date) => ({
-        date,
-        clickCount: clicksByDate[date],
-      }));
-  
-      res.json({
-        topic,
-        totalClicks,
-        uniqueClicks: uniqueUsers.size,
-        clicksByDate: formattedClicksByDate,
-        urls: urlsData,
-      });
+
+        const formattedClicksByDate = Object.keys(clicksByDate).map((date) => ({
+            date,
+            clickCount: clicksByDate[date],
+        }));
+
+        // Render the data in your EJS view
+        res.render('topicAnalytics', {
+            topic,
+            totalClicks,
+            uniqueClicks: uniqueUsers.size,
+            clicksByDate: formattedClicksByDate,
+            urls: urlsData,
+            error: null,  // Or pass an error message if needed
+        });
     } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Internal server error' });
+        console.error(error);
+        res.status(500).json({ error: 'Internal server error' });
     }
-  };
-  
+};

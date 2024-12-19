@@ -37,6 +37,13 @@
       <!-- Display shorter analytics link -->
       <a href="<%= analyticsUrl %>" target="_blank"><%= displayAnalyticsUrl %></a>
     </p>
+
+    <% if (topic) { %>
+      <h3>Topic Analytics:</h3>
+      <p>
+        <a href="/analytics/topic/<%= topic %>" target="_blank">View Topic Analytics for "<%= topic %>"</a>
+      </p>
+    <% } %>
   <% } %>
 
   <% if (error) { %>
